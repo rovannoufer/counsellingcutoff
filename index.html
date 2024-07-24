@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Outfit", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+        }
+
+        .control-panel{
+           top:0;
+           position: sticky;
+           background-color: lch(57 12.94 155.25);
+           padding: 14px;
+        }
+
+        label {
+            color: white;
+            width: 100%;
+            display: block;
+            margin-bottom: 7px;
+        }
+        td {
+           border:1px solid black;  
+        }
+        table{
+            border-collapse: collapse;
+        }
+    </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+  
+</head>
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+  
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyArUtR8NmA4Q_2I1yL8vbE4qPxR98lkFDE",
+      authDomain: "chatbot-ai-8fa64.firebaseapp.com",
+      projectId: "chatbot-ai-8fa64",
+      storageBucket: "chatbot-ai-8fa64.appspot.com",
+      messagingSenderId: "407296071371",
+      appId: "1:407296071371:web:1db35aa89c59b679206d4e",
+      measurementId: "G-8X93M5EBXN"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+<script type="module">
+    import {html, render} from 'https://esm.run/lit-html';
+    import {repeat} from 'https://esm.run/lit-html/directives/repeat';
+    import {cache} from 'https://esm.run/lit-html/directives/cache';
+    import {styleMap} from 'https://esm.run/lit-html/directives/style-map.js';
+
+    const result = await((await fetch("cleaned.json")).json());
+    let marks=195.5;
+    let dept = Array.from(new Set(result.map(i => i.brn))).sort();
+    
+    let selected_dept = new Set();
+    let quota = new Set(["SCA","SC","BC","MBC","BCM","OC"]);
+    let selected_quota = 'OC';
+    let query= '';
+    
+    function main_render(){
+    
+    render(html`
+    ${controlPanelTemplate()}
+    ${tableTemplate()}
+    `, document.body);
+   }
+    
+    let controlPanelTemplate = () => html`
+     <div class="control-panel">
+        <label>  Cut-off
+        <input @input=${(e) => {
+        marks = e.target.value;
+        main_render();
+        }} type="number" value="${marks}"/>
+        </label>
+       <label> Branch
+        <select style="width: 100%" @input=${
+         (e) => {
+            selected_dept.clear()
+            Array.from(e.target.selectedOptions).forEach(i => selected_dept.add(i.value) )
+            main_render()
+         }    
+        } multiple id="select-box">
+            ${ repeat(dept,(i) => html`
+                <option> ${i} </option>
+                `)}
+           </select>
+        </label>
+        
+        <label> Quota <select @input=${
+         (e) =>{
+            selected_quota = e.target.value;
+            main_render();
+         }    
+        } >
+            ${ repeat(quota,(i) => html`
+                <option ?selected=${i==selected_quota} > ${i} </option>
+                `)}
+           </select> </label>
+
+          <label> Search
+            <input type='search' placeholder="Ex: MIT, CEG" @input=${
+            (e)=>{
+               query=e.target.value;
+               main_render();
+            }
+           }/>  
+          </label>
+        
+           <button @click=${(e) => {
+            document.querySelector('#select-box').value = '';
+            selected_dept.clear();
+            selected_quota='OC';
+            marks=195.5;
+            main_render();
+           } } > Reset </button>
+     </div>
+    `;
+    
+    let tableTemplate = () => {
+        const now = window.performance.now();
+    const filtered_rows = result.filter(i => selected_dept.size==0  || selected_dept.has(i.brn)).sort((l,r)=> r[selected_quota]- l[selected_quota]).filter(i => i.brn.includes(query) || i.con.includes(query));
+    console.log(window.performance.now() - now);
+        return html`
+        <div style="width: 100%; overflow:auto"><table><tbody>${repeat(filtered_rows, i => i._id , (i) => cache(html`
+    <tr style=${styleMap({ backgroundColor: i[selected_quota] < marks ? 'white' : 'lch(92 7.85 155.8)', color: 'black' })} >
+          <td>${i.con}</td>
+          <td>${i.brn}</td>
+          <td>${i[selected_quota]}</td>
+          <td>${i.pincode}</td>
+        </tr>
+    `))}</tbody></table></div>
+    `};
+    main_render();
+
+   
+    
+</script>
+
+
+</html>
